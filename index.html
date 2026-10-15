@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="数字媒体艺术个人作品集 V7：纸团展开与横向滑动作品墙。">
+<title>我的数字身份 · V7</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
+:root{
+  --red:#e20b0b;
+  --red-dark:#b90909;
+  --ink:#111111;
+  --paper:#f4efe6;
+  --paper-2:#e8dfd2;
+  --gray:#9a958d;
+  --line:rgba(17,17,17,.18);
+  --white:#fffaf2;
+  --max:1440px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"DM Sans","Noto Sans SC",sans-serif;overflow-x:hidden}
+body.modal-open{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+.site-header{
+  height:78px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 5vw;position:sticky;top:0;z-index:60;
+  background:rgba(244,239,230,.94);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line)
+}
+.logo{font-size:17px;font-weight:900;letter-spacing:-.07em}
+.logo span{color:var(--red)}
+.nav{display:flex;gap:28px;font-size:11px;font-weight:800;letter-spacing:.04em}
+.nav a{transition:opacity .2s}.nav a:hover{opacity:.45}
+.menu-toggle{display:none;border:0;background:none;cursor:pointer;color:var(--ink)}
+main{max-width:var(--max);margin:auto}
+
+/* ===== HERO ===== */
+.hero{
+  min-height:calc(100vh - 78px);background:var(--red);color:var(--ink);
+  position:relative;overflow:hidden;border-bottom:0;
+}
+.hero-top{
+  height:64px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 5vw;border-bottom:1px solid rgba(17,17,17,.2);
+  font-size:9px;font-weight:900;letter-spacing:.17em
+}
+.hero-top .muted{opacity:.55}
+.hero-stage{position:relative;height:calc(100vh - 142px);min-height:610px}
+.hero-copy{
+  position:absolute;left:5vw;top:9%;z-index:18;width:min(420px,40vw)
+}
+.hero-copy .kicker{font-size:10px;font-weight:900;letter-spacing:.2em;margin-bottom:24px}
+.hero-copy h1{
+  margin:0;font-size:clamp(68px,9vw,148px);line-height:.77;
+  letter-spacing:-.105em;font-weight:900
+}
+.hero-copy h1 span{display:block}
+.hero-copy p{max-width:330px;margin:28px 0 0;font-size:13px;line-height:1.65;font-weight:500}
+.hero-copy .scroll-note{margin-top:28px;font-size:9px;letter-spacing:.15em;font-weight:900}
+
+.paper-field{position:absolute;inset:0;z-index:10;pointer-events:none}
+.paper-ball{
+  --rot:0deg;
+  position:absolute;width:82px;height:82px;border:0;border-radius:50%;
+  cursor:pointer;pointer-events:auto;transform:rotate(var(--rot));
+  filter:drop-shadow(10px 13px 0 rgba(17,17,17,.16));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),filter .35s;
+  background:transparent;
+}
+.paper-ball:hover{transform:rotate(0deg) scale(1.12);filter:drop-shadow(14px 17px 0 rgba(17,17,17,.2))}
+.paper-ball::before{
+  content:"";position:absolute;inset:0;border-radius:48% 52% 45% 55%;
+  background:
+    radial-gradient(circle at 27% 22%,rgba(255,255,255,.9),transparent 16%),
+    radial-gradient(circle at 67% 25%,rgba(255,255,255,.45),transparent 18%),
+    linear-gradient(145deg,#fff9ef 0 28%,#d9d0c2 29% 37%,#f8f1e6 38% 55%,#c8bfb2 56% 63%,#eee5d8 64%);
+  box-shadow:inset -12px -15px 17px rgba(70,55,40,.16),inset 9px 7px 12px rgba(255,255,255,.75);
+}
+.paper-ball::after{
+  content:"";position:absolute;left:16%;top:42%;width:69%;height:18%;
+  border-radius:50%;background:rgba(90,72,53,.13);filter:blur(6px);transform:rotate(-17deg)
+}
+.paper-ball b{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:9px;letter-spacing:.12em;color:#332b23;white-space:nowrap}
+.pb1{left:47%;top:10%;--rot:-18deg}.pb2{left:72%;top:18%;--rot:13deg}.pb3{left:83%;top:53%;--rot:-26deg}
+.pb4{left:58%;top:65%;--rot:21deg}.pb5{left:35%;top:66%;--rot:-10deg}
+
+.drag-wrap{
+  position:absolute;left:50%;top:51%;transform:translate(-22%,-50%);
+  width:min(760px,57vw);height:350px;z-index:8;cursor:grab;touch-action:none;
+}
+.drag-wrap.dragging{cursor:grabbing}
+.drag-track{position:absolute;left:0;top:0;height:100%;width:max-content;display:flex;align-items:center;gap:18px;will-change:transform}
+.tile{
+  width:180px;height:220px;flex:0 0 auto;position:relative;overflow:hidden;
+  background:var(--paper);border:2px solid var(--ink);
+  box-shadow:11px 14px 0 rgba(17,17,17,.2);
+  transform:rotate(var(--r)) scale(var(--s));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;
+  user-select:none
+}
+.tile.center{--s:1.08;box-shadow:15px 18px 0 rgba(17,17,17,.28);z-index:5}
+.tile .shape{position:absolute;inset:0}
+.tile:nth-child(1) .shape{background:linear-gradient(135deg,#111 0 45%,#f4efe6 45%);}.tile:nth-child(1){--r:-7deg}
+.tile:nth-child(2) .shape{background:radial-gradient(circle at 50% 45%,#e20b0b 0 27%,#111 28% 58%,#f4efe6 59%)}.tile:nth-child(2){--r:5deg}
+.tile:nth-child(3) .shape{background:linear-gradient(155deg,#f4efe6 0 32%,#111 33% 63%,#e20b0b 64%)}.tile:nth-child(3){--r:-2deg}
+.tile:nth-child(4) .shape{background:repeating-linear-gradient(45deg,#111 0 16px,#e20b0b 17px 33px,#f4efe6 34px 48px)}.tile:nth-child(4){--r:7deg}
+.tile:nth-child(5) .shape{background:linear-gradient(90deg,#e20b0b 0 25%,#f4efe6 25% 70%,#111 70%)}.tile:nth-child(5){--r:-5deg}
+.tile:nth-child(6) .shape{background:radial-gradient(circle at 25% 70%,#111 0 20%,transparent 21%),linear-gradient(30deg,#e20b0b 0 50%,#f4efe6 50%)}.tile:nth-child(6){--r:4deg}
+.tile:nth-child(7) .shape{background:linear-gradient(135deg,#111 0 33%,#e20b0b 34% 66%,#f4efe6 67%)}.tile:nth-child(7){--r:-8deg}
+.tile .num{position:absolute;left:13px;top:12px;font-size:9px;font-weight:900;z-index:2}
+.tile .name{position:absolute;left:13px;bottom:13px;font-size:11px;font-weight:900;z-index:2}
+.tile .type{position:absolute;right:12px;top:12px;font-size:8px;letter-spacing:.1em;z-index:2}
+.hero-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:62px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 5vw;
+  font-size:9px;font-weight:900;letter-spacing:.15em;z-index:20;
+}
+.hero-bottom span:last-child{opacity:.55}
+
+/* ===== SECTIONS ===== */
+.section{padding:10vw 5vw;border-bottom:1px solid var(--line)}
+.section-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:64px}
+.section-kicker{font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--gray)}
+.section-head h2{font-size:clamp(52px,7vw,100px);line-height:.86;letter-spacing:-.09em;margin:0}
+.section-head p{max-width:310px;margin:0;color:#68625b;font-size:13px;line-height:1.7}
+.index-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:12vw}
+.index-links{border-top:1px solid var(--ink)}
+.index-links a{display:grid;grid-template-columns:55px 1fr 30px;padding:23px 0;border-bottom:1px solid var(--line);font-size:20px;font-weight:700}
+.index-links a:hover{background:rgba(226,11,11,.06)}
+.index-links small{font-size:9px;color:var(--gray)}
+
+.works-section{background:var(--ink);color:var(--white)}
+.works-section .section-kicker{color:#aaa39a}.works-section .section-head p{color:#a7a098}
+.filters{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:35px;border-bottom:1px solid #373737;padding-bottom:17px}
+.filter{border:0;background:none;color:#999;font-size:10px;font-weight:900;cursor:pointer}
+.filter.active,.filter:hover{color:var(--white)}
+.works-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:70px 24px}
+.work-card{cursor:pointer}
+.work-visual{height:430px;position:relative;overflow:hidden;background:var(--paper)}
+.work-visual .graphic{position:absolute;inset:0}
+.work-visual.actual-cover{background:#e8dfd2;display:flex;align-items:center;justify-content:center}
+.work-visual.actual-cover img{width:100%;height:100%;object-fit:contain;position:relative;z-index:1}
+.sheet-visual .sheet-shape.cover-image{background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#e8dfd2}
+.w1{background:linear-gradient(135deg,#e20b0b 0 44%,#f4efe6 44% 67%,#111 67%)}
+.w2{background:radial-gradient(circle at 58% 48%,#e20b0b 0 18%,#f4efe6 19% 45%,#111 46%)}
+.w3{background:linear-gradient(150deg,#111 0 38%,#e20b0b 39% 67%,#f4efe6 68%)}
+.w4{background:repeating-linear-gradient(-45deg,#f4efe6 0 25px,#e20b0b 26px 48px,#111 49px 72px)}
+.w5{background:linear-gradient(90deg,#f4efe6 0 30%,#111 30% 67%,#e20b0b 67%)}
+.w6{background:radial-gradient(circle at 30% 68%,#e20b0b 0 22%,transparent 23%),linear-gradient(30deg,#111 0 50%,#f4efe6 50%)}
+.work-visual::after{content:"VIEW PROJECT ↗";position:absolute;right:16px;bottom:16px;background:var(--red);color:var(--ink);Padding:9px 11px;font-size:9px;font-weight:900}
+.work-info{display:flex;justify-content:space-between;gap:20px;padding-top:17px;border-top:1px solid #4b4b4b;margin-top:10px}
+.work-info h3{margin:0 0 7px;font-size:21px;letter-spacing:-.04em}.work-info p,.work-year{margin:0;color:#9d968d;font-size:10px}
+
+.about-section{background:var(--paper)}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:12vw}
+.about-grid h3{font-size:clamp(48px,7vw,96px);line-height:.88;letter-spacing:-.09em;margin:0}
+.about-grid p{color:#68625b;line-height:1.8;font-size:14px}
+.about-grid .large{font-size:22px;color:var(--ink);line-height:1.45;margin-top:0}
+.skills{display:flex;gap:7px;flex-wrap:wrap;margin-top:30px}
+.skills span{border:1px solid var(--line);padding:7px 10px;border-radius:100px;font-size:9px}
+
+/* ===== 新增：自我介绍（含数字人头像堆叠） ===== */
+.intro-profile{
+  display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-top:24px;
+}
+.avatars{
+  position:relative;width:260px;height:320px;flex:0 0 260px;
+}
+.avatars img{position:absolute;border-radius:12px;object-fit:cover;width:180px;height:260px;box-shadow:18px 20px 0 rgba(17,17,17,.16);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,filter .2s;cursor:pointer}
+.avatar-1{left:0;top:10px;transform:rotate(-8deg)}
+.avatar-2{right:0;bottom:10px;transform:rotate(6deg)}
+.avatar-1:hover,.avatar-2:hover{transform:rotate(0deg) scale(1.06);box-shadow:26px 28px 0 rgba(17,17,17,.22)}
+.avatar-focus{transform:translateX(12px) translateY(-6px) scale(1.12) rotate(0deg);z-index:6;box-shadow:30px 32px 0 rgba(17,17,17,.28)}
+.intro-text{flex:1;min-width:250px}
+.intro-text h3{margin:0;font-size:28px;line-height:1.05}
+.intro-text p{margin:10px 0 0;color:#6c665f}
+.avatar-caption{margin-top:10px;font-size:12px;color:var(--gray)}
+
+/* 小屏优化：堆叠为水平居中且缩小 */
+@media(max-width:800px){
+  .about-grid{grid-template-columns:1fr;gap:50px}
+  .intro-profile{justify-content:flex-start}
+  .avatars{width:200px;height:260px}
+  .avatars img{width:150px;height:220px}
+  .avatar-1{left:6px;top:8px}
+  .avatar-2{right:6px;bottom:8px}
+}
+
+/* ===== 其余 ===== */
+.contact-section{background:var(--red);min-height:70vh;display:flex;flex-direction:column;justify-content:flex-end}
+.contact-section h2{font-size:clamp(62px,10vw,145px);line-height:.8;letter-spacing:-.1em;margin:60px 0 25px}
+.contact-section p{font-size:13px;line-height:1.7;max-width:400px}
+.contact-mail{font-size:clamp(24px,4vw,52px);font-weight:900;letter-spacing:-.06em;margin-top:25px}
+
+footer{padding:25px 5vw;display:flex;justify-content:space-between;font-size:9px;color:#79736b;background:var(--paper)}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ===== PAPER MODAL ===== */
+.paper-modal{position:fixed;inset:0;z-index:100;display:none}
+.paper-modal.open{display:block}
+.paper-modal-backdrop{position:absolute;inset:0;background:rgba(17,17,17,.76);backdrop-filter:blur(8px)}
+.paper-sheet{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-1.2deg);
+  width:min(760px,88vw);max-height:88vh;overflow:auto;
+  background:var(--paper);color:var(--ink);padding:28px;
+  box-shadow:22px 25px 0 rgba(0,0,0,.25)
+}
+.paper-sheet::before{
+  content:"";position:absolute;inset:14px;border:1px dashed rgba(17,17,17,.22);pointer-events:none
+}
+.close-paper{position:absolute;right:22px;top:17px;border:0;background:none;font-size:28px;cursor:pointer;z-index:2}
+.sheet-meta{font-size:9px;font-weight:900;letter-spacing:.16em;margin:20px 0 30px}
+.sheet-visual{height:330px;margin-bottom:30px;position:relative;overflow:hidden;border:1px solid var(--ink)}
+.sheet-visual .sheet-shape{position:absolute;inset:0}
+.sheet-title{font-size:clamp(44px,7vw,76px);line-height:.86;letter-spacing:-.08em;margin:0 0 18px}
+.sheet-copy{max-width:610px;color:#6c665f;line-height:1.8;font-size:13px}
+.sheet-row{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:25px;padding-top:14px;font-size:10px;color:#777}
+.sheet-action{display:inline-flex;margin-top:25px;padding:12px 15px;background:var(--red);font-size:10px;font-weight:900}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{transition:none}
+  .paper-ball,.tile{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="#top">XUYUAN<span>·</span>PORTFOLIO</a>
+  <nav class="nav" id="nav">
+    <a href="#index">INDEX</a><a href="#works">WORKS</a><a href="#about">ABOUT</a><a href="#contact">CONTACT</a>
+  </nav>
+  <button class="menu-toggle" id="menuBtn" aria-label="打开菜单">MENU</button>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="hero-top"><span>MY / DIGITAL IDENTITY — 2026</span><span class="muted">PAPER · DRAG · EXPLORE</span></div>
+  <div class="hero-stage">
+    <div class="hero-copy">
+      <div class="kicker">DIGITAL MEDIA ART</div>
+      <h1><span>MY</span><span>PORTFOLIO</span></h1>
+      <p>视觉设计 / 品牌表达 / 插画 IP / 网页交互 / 动态设计<br>把作品变成可以被看见、被移动、被体验的视觉语言。</p>
+      <div class="scroll-note">DRAG THE SQUARES · TAP A PAPER BALL</div>
+    </div>
+
+    <div class="paper-field" aria-label="可交互纸团">
+      <button class="paper-ball pb1" data-work="0" aria-label="打开作品一"><b>01</b></button>
+      <button class="paper-ball pb2" data-work="1" aria-label="打开作品二"><b>02</b></button>
+      <button class="paper-ball pb3" data-work="2" aria-label="打开作品三"><b>03</b></button>
+      <button class="paper-ball pb4" data-work="3" aria-label="打开作品四"><b>04</b></button>
+      <button class="paper-ball pb5" data-work="4" aria-label="打开作品五"><b>05</b></button>
+    </div>
+
+    <div class="drag-wrap" id="dragWrap" aria-label="可拖动作品墙">
+      <div class="drag-track" id="dragTrack">
+        <article class="tile" data-work="0"><div class="shape"></div><span class="num">01</span><span class="type">VISUAL</span><span class="name">珠灯·映月</span></article>
+        <article class="tile" data-work="1"><div class="shape"></div><span class="num">02</span><span class="type">BRAND</span><span class="name">迷幻迷宫</span></article>
+        <article class="tile" data-work="2"><div class="shape"></div><span class="num">03</span><span class="type">IP / ILLU</span><span class="name">作品三</span></article>
+        <article class="tile" data-work="3"><div class="shape"></div><span class="num">04</span><span class="type">WEB</span><span class="name">作品四</span></article>
+        <article class="tile" data-work="4"><div class="shape"></div><span class="num">05</span><span class="type">MOTION</span><span class="name">作品五</span></article>
+        <article class="tile" data-work="5"><div class="shape"></div><span class="num">06</span><span class="type">SYSTEM</span><span class="name">作品六</span></article>
+        <article class="tile" data-work="6"><div class="shape"></div><span class="num">07</span><span class="type">EXPERIMENT</span><span class="name">作品七</span></article>
+      </div>
+    </div>
+  </div>
+  <div class="hero-bottom"><span>SCROLL TO ENTER</span><span>01 — 07 / SELECTED WORKS</span></div>
+</section>
+
+<section class="section" id="index">
+  <div class="section-head reveal">
+    <div><div class="section-kicker">01 / INDEX</div><h2>SELECTED<br>WORKS</h2></div>
+    <p>先看作品，再看我。这里保留最重要的项目入口；真正作品图片后续直接替换占位视觉即可。</p>
+  </div>
+  <div class="index-grid reveal">
+    <div>
+      <p>一个以视觉、叙事和交互为核心的数字媒体艺术作品集。首页负责吸引，作品页负责说明，About 负责建立个人身份。</p>
+    </div>
+    <div class="index-links">
+      <a href="#works"><small>01</small><span>珠灯·映月 / 非遗 IP 设计</span><span>↗</span></a>
+      <a href="#works"><small>02</small><span>迷幻迷宫 / 沉浸式数字体验</span><span>↗</span></a>
+      <a href="#works"><small>03</small><span>网页交互 / 数字体验</span><span>↗</span></a>
+      <a href="#works"><small>04</small><span>动态设计 / 视觉实验</span><span>↗</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="section works-section" id="works">
+  <div class="section-head reveal">
+    <div><div class="section-kicker">02 / WORKS</div><h2>THE<br>WALL</h2></div>
+    <p>黑底让作品成为视觉主体；红色只作为导航、交互和强调色，和首页形成同一套视觉系统。</p>
+  </div>
+  <div class="filters reveal"><button class="filter active" data-filter="all">ALL</button><button class="filter" data-filter="visual">VISUAL</button><button class="filter" data-filter="brand">BRAND</button><button class="filter" data-filter="ip">IP / ILLU</button><button class="filter" data-filter="web">WEB</button><button class="filter" data-filter="motion">MOTION</button></div>
+  <div class="works-grid">
+    <article class="work-card reveal" data-category="ip" data-work="0"><div class="work-visual actual-cover"><img src="assets/珠灯映月_封面.jpg" alt="珠灯·映月非遗IP设计封面"></div><div class="work-info"><div><h3>珠灯·映月</h3><p>浙江非遗珠灯 IP 设计 / 插画与文创延展</p></div><span class="work-year">01</span></div></article>
+    <article class="work-card reveal" data-category="web" data-work="1"><div class="work-visual actual-cover"><img src="assets/迷幻迷宫_封面.jpg" alt="迷幻迷宫沉浸式数字疗法空间封面"></div><div class="work-info"><div><h3>迷幻迷宫：沉浸式数字疗法空间</h3><p>第一人称闯关体验 / 沉浸式交互概念</p></div><span class="work-year">02</span></div></article>
+    <article class="work-card reveal" data-category="ip" data-work="2"><div class="work-visual"><div class="graphic w3"></div></div><div class="work-info"><div><h3>作品三 · 替换为你的项目</h3><p>插画 / IP / 2026</p></div><span class="work-year">03</span></div></article>
+    <article class="work-card reveal" data-category="web" data-work="3"><div class="work-visual"><div class="graphic w4"></div></div><div class="work-info"><div><h3>作品四 · 替换为你的项目</h3><p>网页交互 / 2026</p></div><span class="work-year">04</span></div></article>
+    <article class="work-card reveal" data-category="motion" data-work="4"><div class="work-visual"><div class="graphic w5"></div></div><div class="work-info"><div><h3>作品五 · 替换为你的项目</h3><p>动态设计 / 2026</p></div><span class="work-year">05</span></div></article>
+    <article class="work-card reveal" data-category="visual" data-work="5"><div class="work-visual"><div class="graphic w6"></div></div><div class="work-info"><div><h3>作品六 · 替换为你的项目</h3><p>综合项目 / 2026</p></div><span class="work-year">06</span></div></article>
+  </div>
+</section>
+
+<section class="section about-section" id="about">
+  <div class="section-kicker reveal">03 / ABOUT</div>
+  <div class="about-grid reveal">
+    <div><h3>MAKE<br>IT<br>VISIBLE.</h3></div>
+    <div>
+      <p class="large">我是一名数字媒体艺术设计者，关注视觉系统、品牌表达、IP 插画与网页交互。</p>
+      <p>这个页面不是把作品简单堆在一起，而是希望让“作品如何被观看”本身成为设计的一部分。纸团、滑动方块、黑红米白的视觉系统共同构成我的数字身份。</p>
+
+      <!-- 新增自我介绍区（包含两张数字人形象） -->
+      <div class="intro-profile" aria-label="自我介绍">
+        <div class="avatars" aria-hidden="false">
+          <!-- 我已上传占位 SVG 头像；后续你可以替换为 avatar-1.png / avatar-2.png -->
+          <img src="assets/avatar-1.svg" alt="数字人形象 一，坐姿，微笑" class="avatar avatar-1" />
+          <img src="assets/avatar-2.svg" alt="数字人形象 二，站姿，胜利手势" class="avatar avatar-2" />
+        </div>
+        <div class="intro-text">
+          <h3>嗨，我是 XUYUAN</h3>
+          <p>我把视觉与互动当作语言，用图像、动效与界面讲故事。我的工作跨越品牌、插画与网页交互，擅长把复杂的叙事和体验变成直观且可参与的视觉系统。</p>
+          <div class="avatar-caption">点击头像以凸显对应形象；两张形象分别可代表“项目人设/作品风格”等展示内容。</div>
+        </div>
+      </div>
+
+      <div class="skills"><span>VISUAL DESIGN</span><span>BRANDING</span><span>IP / ILLUSTRATION</span><span>UI / WEB</span><span>MOTION</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section contact-section" id="contact">
+  <div class="section-kicker">04 / CONTACT</div>
+  <h2>LET'S<br>MAKE<br><span>SOMETHING.</span></h2>
+  <p>如果你想继续了解我的作品、合作方向或完整项目过程，可以通过邮件联系我。</p>
+  <a class="contact-mail" href="mailto:your@email.com">your@email.com ↗</a>
+</section>
+</main>
+
+<footer><span>© 2026 XUYUAN / DIGITAL MEDIA ART</span><span>RED · INK · PAPER</span></footer>
+
+<div class="paper-modal" id="paperModal" aria-hidden="true">
+  <div class="paper-modal-backdrop" id="modalBackdrop"></div>
+  <div class="paper-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <button class="close-paper" id="closePaper" aria-label="关闭">×</button>
+    <div class="sheet-meta" id="sheetMeta">PROJECT 01 / VISUAL DESIGN</div>
+    <div class="sheet-visual"><div class="sheet-shape" id="sheetShape"></div></div>
+    <h2 class="sheet-title" id="sheetTitle">作品一</h2>
+    <p class="sheet-copy" id="sheetCopy">这里是作品简介占位。后续可以替换成真实项目的 100–150 字说明，包括项目背景、设计目标、个人职责、视觉策略和最终成果。</p>
+    <div class="sheet-row"><span id="sheetYear">2026</span><span id="sheetRole">视觉设计</span></div>
+    <a class="sheet-action" href="#works" id="sheetAction">VIEW PROJECT ↗</a>
+  </div>
+</div>
+
+<script>
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const projects = [
+  {title:'珠灯·映月', meta:'PROJECT 01 / INTANGIBLE CULTURAL HERITAGE IP', year:'2026', role:'非遗 IP / 插画 / 文创设计', copy:'以浙江非遗珠灯为灵感，提取珠灯造型、纹样与配色，结合现代审美塑造珠灯文化守护者形象，并延展至海报、插画、明信片、包装与文创应用。点击下方按钮可查看完整作品 PDF。', cls:'cover-image', cover:'assets/珠灯映月_封面.jpg', pdf:'assets/珠灯映月_IP作品集.pdf'},
+  {title:'迷幻迷宫：沉浸式数字疗法空间', meta:'PROJECT 02 / IMMERSIVE DIGITAL EXPERIENCE', year:'2026', role:'沉浸式交互 / 数字艺术体验', copy:'以第一人称探索为核心，将情绪探索隐喻为超现实迷宫。项目围绕从混沌入口、迷茫回廊到光之核心的体验路径，结合光影、色彩、空间与交互反馈，构建从迷茫走向平静的沉浸式体验概念。点击下方按钮可查看完整项目 PDF。', cls:'cover-image', cover:'assets/迷幻迷宫_封面.jpg', pdf:'assets/迷幻迷宫_沉浸式数字疗法空间.pdf'},
+  {title:'作品三 · 替换为你的项目', meta:'PROJECT 03 / IP + ILLUSTRATION', year:'2026', role:'插画 / IP', copy:'这里是作品简介占位。可以放入你的非遗 IP、角色设计、故事线、插画系统与应用延展。', cls:'w3'},
+  {title:'作品四 · 替换为你的项目', meta:'PROJECT 04 / WEB INTERACTION', year:'2026', role:'网页交互', copy:'这里是作品简介占位。可以放入网页结构、交互逻辑、视觉动效与响应式设计过程。', cls:'w4'},
+  {title:'作品五 · 替换为你的项目', meta:'PROJECT 05 / MOTION DESIGN', year:'2026', role:'动态设计', copy:'这里是作品简介占位。可以放入动态视觉、分镜、节奏、转场和最终展示效果。', cls:'w5'},
+  {title:'作品六 · 替换为你的项目', meta:'PROJECT 06 / VISUAL SYSTEM', year:'2026', role:'综合项目', copy:'这里是作品简介占位。可以放入综合设计项目与跨媒介应用成果。', cls:'w6'},
+  {title:'作品七 · 替换为你的项目', meta:'PROJECT 07 / EXPERIMENT', year:'2026', role:'视觉实验', copy:'这里是作品简介占位。可以放入实验性视觉、生成设计或个人研究项目。', cls:'w1'}
+];
+
+const modal=document.getElementById('paperModal');
+const sheetTitle=document.getElementById('sheetTitle');
+const sheetMeta=document.getElementById('sheetMeta');
+const sheetCopy=document.getElementById('sheetCopy');
+const sheetYear=document.getElementById('sheetYear');
+const sheetRole=document.getElementById('sheetRole');
+const sheetShape=document.getElementById('sheetShape');
+
+function openProject(i){
+  const p=projects[i]||projects[0];
+  sheetTitle.textContent=p.title; sheetMeta.textContent=p.meta; sheetCopy.textContent=p.copy;
+  sheetYear.textContent=p.year; sheetRole.textContent=p.role;
+  sheetShape.className='sheet-shape '+p.cls; sheetShape.style.backgroundImage=p.cover?`url('${p.cover}')`:''; document.getElementById('sheetAction').href=p.pdf||'#works'; document.getElementById('sheetAction').target=p.pdf?'_blank':'_self'; document.getElementById('sheetAction').textContent=p.pdf?'OPEN FULL PROJECT PDF ↗':'VIEW PROJECT ↗';
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open');
+}
+function closeProject(){
+  modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open');
+}
+document.querySelectorAll('.paper-ball,.tile,.work-card').forEach(el=>{
+  el.addEventListener('click',()=>{ if(!el.dataset.work) return; openProject(Number(el.dataset.work)); });
+});
+document.getElementById('closePaper').addEventListener('click',closeProject);
+document.getElementById('modalBackdrop').addEventListener('click',closeProject);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProject()});
+
+const nav=document.getElementById('nav');
+document.getElementById('menuBtn').addEventListener('click',()=>nav.classList.toggle('open'));
+nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
+
+/* drag + inertia + magnetic center */
+const wrap=document.getElementById('dragWrap');
+const track=document.getElementById('dragTrack');
+const tiles=[...document.querySelectorAll('.tile')];
+let x=0,target=0,velocity=0,startX=0,startTarget=0,dragging=false,moved=false;
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function limit(){return Math.max(0,track.scrollWidth-wrap.clientWidth)}
+function centerTiles(){
+  const mid=wrap.getBoundingClientRect().left+wrap.clientWidth/2;
+  tiles.forEach(t=>{
+    const r=t.getBoundingClientRect(), c=r.left+r.width/2, d=Math.abs(c-mid);
+    t.classList.toggle('center',d<105);
+  });
+}
+function render(){
+  const max=limit();
+  target=clamp(target,-max-120,40);
+  if(!dragging) x += (target-x)*.095;
+  track.style.transform=`translate3d(${x}px,0,0)`;
+  centerTiles();
+  if(!prefersReduced) requestAnimationFrame(render);
+}
+if(prefersReduced) render(); else requestAnimationFrame(render);
+
+wrap.addEventListener('pointerdown',e=>{
+  dragging=true;moved=false;startX=e.clientX;startTarget=target;velocity=0;
+  wrap.setPointerCapture(e.pointerId);
+});
+wrap.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  const dx=e.clientX-startX;
+  if(Math.abs(dx)>5)moved=true;
+  target=startTarget+dx; velocity=dx;
+});
+function endDrag(){
+  if(!dragging)return;
+  dragging=false;
+  target += velocity*.65;
+  const max=limit();
+  target=clamp(target,-max-120,40);
+}
+wrap.addEventListener('pointerup',endDrag);
+wrap.addEventListener('pointercancel',endDrag);
+wrap.addEventListener('wheel',e=>{
+  e.preventDefault(); target-=e.deltaY+e.deltaX;
+},{passive:false});
+
+tiles.forEach(t=>t.addEventListener('click',e=>{
+  if(moved){e.stopPropagation();return}
+  openProject(Number(t.dataset.work));
+}));
+window.addEventListener('resize',()=>{target=clamp(target,-limit()-120,40)});
+
+/* filters */
+document.querySelectorAll('.filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const f=btn.dataset.filter;
+    document.querySelectorAll('.work-card').forEach(card=>{
+      card.style.display=(f==='all'||card.dataset.category===f)?'block':'none';
+    });
+  });
+});
+
+/* reveal */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');obs.unobserve(entry.target)}})
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* 新增：头像交互（点击凸显） */
+document.querySelectorAll('.avatars img').forEach(img=>{
+  img.addEventListener('click', (e)=>{
+    document.querySelectorAll('.avatars img').forEach(i=>i.classList.remove('avatar-focus'));
+    e.currentTarget.classList.add('avatar-focus');
+  });
+});
+</script>
+</body>
+</html>
